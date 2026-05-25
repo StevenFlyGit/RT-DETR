@@ -11,6 +11,11 @@ import torch.utils.data
 import torchvision
 torchvision.disable_beta_transforms_warning()
 
+from PIL import Image, ImageFile
+
+Image.MAX_IMAGE_PIXELS = None
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
 from torchvision import datapoints
 
 from pycocotools import mask as coco_mask

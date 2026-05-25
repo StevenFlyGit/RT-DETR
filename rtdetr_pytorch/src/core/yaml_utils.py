@@ -155,7 +155,7 @@ def load_config(file_path, cfg=dict()):
     _, ext = os.path.splitext(file_path)
     assert ext in ['.yml', '.yaml'], "only support yaml files for now"
 
-    with open(file_path) as f:
+    with open(file_path, encoding='utf-8-sig') as f:
         file_cfg = yaml.load(f, Loader=yaml.Loader)
         if file_cfg is None:
             return {}
@@ -169,7 +169,7 @@ def load_config(file_path, cfg=dict()):
             if not base_yaml.startswith('/'):
                 base_yaml = os.path.join(os.path.dirname(file_path), base_yaml)
 
-            with open(base_yaml) as f:
+            with open(base_yaml, encoding='utf-8-sig') as f:
                 base_cfg = load_config(base_yaml, cfg)
                 merge_config(base_cfg, cfg)
 

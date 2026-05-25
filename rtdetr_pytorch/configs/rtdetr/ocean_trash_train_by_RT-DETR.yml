@@ -1,0 +1,85 @@
+__include__: [
+  "../dataset/coco_detection.yml",
+  "../runtime.yml",
+  "./include/dataloader.yml",
+  "./include/optimizer.yml",
+  "./include/rtdetr_r50vd.yml",
+]
+task: detection
+
+# 类别定义（顺序必须与 dataset/classes.txt 保持一致）
+num_classes: 13
+remap_mscoco_category: False
+
+# 数据根目录（指向你切分后的 COCO 风格数据）
+data_root: E:/StevenWork/UnderwaterGarbageClassification/dataset/splitData
+
+train_dataloader:
+  dataset:
+    type: CocoDetection
+    img_folder: E:/StevenWork/UnderwaterGarbageClassification/dataset/splitData/images/train/
+    ann_file: E:/StevenWork/UnderwaterGarbageClassification/dataset/splitData/annotations/annotationsCocoTrain.json
+  shuffle: True
+  batch_size: 12
+  num_workers: 5
+  drop_last: True
+
+val_dataloader:
+  dataset:
+    type: CocoDetection
+    img_folder: E:/StevenWork/UnderwaterGarbageClassification/dataset/splitData/images/val/
+    ann_file: E:/StevenWork/UnderwaterGarbageClassification/dataset/splitData/annotations/annotationsCocoVal.json
+  shuffle: False
+  batch_size: 2
+  num_workers: 5
+  drop_last: False
+
+evaluator:
+  type: CocoEvaluator
+  iou_types: ['bbox']
+  ann_file: E:/StevenWork/UnderwaterGarbageClassification/dataset/splitData/annotations/annotationsCocoVal.json
+
+# 训练轮数（与官方基座建议一致）
+epoches: 60
+
+# 输出目录
+output_dir: './output/ocean_trash_rtdetr'
+
+# 预训练权重（可选，推荐填入本地下载的官方权重）
+resume: ''
+tuning: './rtdetr_r50vd_6x_coco_from_paddle.pth'
+
+# 可选：使用 EMA / 混合精度（如需启用可改为 True）
+use_ema: True
+use_amp: True
+
+# 若需要微调学习率策略或优化器，可在此覆盖 include 的默认项
+optimizer:
+  type: AdamW
+  params:
+    -
+      params: 'backbone'
+      lr: 0.00005
+    -
+      params: '^(?=.*(decoder|head))(?!.*(bias|norm.*weight)).*$'
+      lr: 0.00008
+    -
+      params: '^(?=.*encoder(?=.*bias|.*norm.*weight)).*$'
+      weight_decay: 0.
+    -
+      params: '^(?=.*decoder(?=.*bias|.*norm.*weight)).*$'
+      weight_decay: 0.
+  lr: 0.00005
+  betas: [0.9, 0.999]
+  weight_decay: 0.0001
+
+lr_scheduler:
+  type: WarmupCosineLR
+  warmup_epochs: 5
+  total_epochs: 60
+  min_lr: 0.000001
+
+print_freq: 10
+
+PResNet:
+  pretrained: False
