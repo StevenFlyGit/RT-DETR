@@ -2,6 +2,7 @@
 """
 
 import os
+import re
 import yaml 
 import inspect
 import importlib
@@ -173,7 +174,62 @@ def load_config(file_path, cfg=dict()):
                 base_cfg = load_config(base_yaml, cfg)
                 merge_config(base_cfg, cfg)
 
-    return merge_config(file_cfg, cfg)
+    merged = merge_config(file_cfg, cfg)
+    try:
+        resolve_references(merged)
+    except Exception:
+        # be conservative: don't fail on resolve errors
+        pass
+    return merged
+
+
+VAR_PATTERN = re.compile(r'\$\{([^}]+)\}')
+
+
+def _get_by_path(cfg: dict, path: str):
+    cur = cfg
+    for p in path.split('.'):
+        if isinstance(cur, dict) and p in cur:
+            cur = cur[p]
+        else:
+            return None
+    return cur
+
+
+def _resolve_once(obj, cfg: dict):
+    if isinstance(obj, str):
+        def _repl(m):
+            key = m.group(1)
+            val = _get_by_path(cfg, key)
+            if val is None:
+                return m.group(0)
+            if isinstance(val, (dict, list)):
+                return str(val)
+            return str(val)
+
+        return VAR_PATTERN.sub(_repl, obj)
+
+    if isinstance(obj, dict):
+        for k, v in list(obj.items()):
+            obj[k] = _resolve_once(v, cfg)
+        return obj
+
+    if isinstance(obj, list):
+        for i in range(len(obj)):
+            obj[i] = _resolve_once(obj[i], cfg)
+        return obj
+
+    return obj
+
+
+def resolve_references(cfg: dict):
+    max_iter = 10
+    for _ in range(max_iter):
+        before = repr(cfg)
+        _resolve_once(cfg, cfg)
+        after = repr(cfg)
+        if before == after:
+            break
 
 
 

@@ -12,13 +12,18 @@ num_classes: 13
 remap_mscoco_category: False
 
 # 数据根目录（指向你切分后的 COCO 风格数据）
-data_root: E:/StevenWork/UnderwaterGarbageClassification/dataset/splitData
+# ！！！请根据实际路径修改以下变量，确保指向正确的训练和验证数据集
+data_root: xxx/UnderwaterGarbageClassification/dataset/splitData
+train_img: ${data_root}/images/train/
+train_ann: ${data_root}/annotations/annotationsCocoTrain.json
+val_img: ${data_root}/images/val/
+val_ann: ${data_root}/annotations/annotationsCocoVal.json
 
 train_dataloader:
   dataset:
     type: CocoDetection
-    img_folder: E:/StevenWork/UnderwaterGarbageClassification/dataset/splitData/images/train/
-    ann_file: E:/StevenWork/UnderwaterGarbageClassification/dataset/splitData/annotations/annotationsCocoTrain.json
+    img_folder: ${train_img}
+    ann_file: ${train_ann}
   shuffle: True
   batch_size: 12
   num_workers: 5
@@ -27,8 +32,8 @@ train_dataloader:
 val_dataloader:
   dataset:
     type: CocoDetection
-    img_folder: E:/StevenWork/UnderwaterGarbageClassification/dataset/splitData/images/val/
-    ann_file: E:/StevenWork/UnderwaterGarbageClassification/dataset/splitData/annotations/annotationsCocoVal.json
+    img_folder: ${val_img}
+    ann_file: ${val_ann}
   shuffle: False
   batch_size: 2
   num_workers: 5
@@ -37,7 +42,7 @@ val_dataloader:
 evaluator:
   type: CocoEvaluator
   iou_types: ['bbox']
-  ann_file: E:/StevenWork/UnderwaterGarbageClassification/dataset/splitData/annotations/annotationsCocoVal.json
+  ann_file: ${val_ann}
 
 # 训练轮数（与官方基座建议一致）
 epoches: 60

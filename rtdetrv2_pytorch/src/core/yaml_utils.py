@@ -3,6 +3,7 @@
 
 import os
 import copy
+import re
 import yaml 
 from typing import Any, Dict, Optional, List
 
@@ -44,6 +45,56 @@ def load_config(file_path, cfg=dict()):
                 merge_dict(cfg, base_cfg)
 
     return merge_dict(cfg, file_cfg)
+
+
+VAR_PATTERN = re.compile(r'\$\{([^}]+)\}')
+
+
+def _get_by_path(cfg: Dict, path: str):
+    cur = cfg
+    for p in path.split('.'):
+        if isinstance(cur, dict) and p in cur:
+            cur = cur[p]
+        else:
+            return None
+    return cur
+
+
+def _resolve_once(obj, cfg: Dict):
+    if isinstance(obj, str):
+        def _repl(m):
+            key = m.group(1)
+            val = _get_by_path(cfg, key)
+            if val is None:
+                return m.group(0)
+            if isinstance(val, (dict, list)):
+                return str(val)
+            return str(val)
+
+        return VAR_PATTERN.sub(_repl, obj)
+
+    if isinstance(obj, dict):
+        for k, v in list(obj.items()):
+            obj[k] = _resolve_once(v, cfg)
+        return obj
+
+    if isinstance(obj, list):
+        for i in range(len(obj)):
+            obj[i] = _resolve_once(obj[i], cfg)
+        return obj
+
+    return obj
+
+
+def resolve_references(cfg: Dict):
+    # Repeatedly resolve until stable or max iterations reached
+    max_iter = 10
+    for _ in range(max_iter):
+        before = repr(cfg)
+        _resolve_once(cfg, cfg)
+        after = repr(cfg)
+        if before == after:
+            break
 
 
 def merge_dict(dct, another_dct, inplace=True) -> Dict:
